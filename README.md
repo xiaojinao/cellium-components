@@ -9,7 +9,7 @@
 
 1. 把组件打成 zip，作为一个版本上传到你仓库的 GitHub Releases（或任何能直接下载的地方）。
 2. Fork 这个仓库，在 `components/` 下新建一个以组件标识命名的文件夹，里面放一个 `meta.json`。可以直接复制 [examples/example-cell.json](examples/example-cell.json) 改内容。
-3. 本地校验：装 Node 18 或更新版本，在仓库根目录运行 `npm run validate`（不需要 `npm install`，脚本只用 Node 自带模块）。按提示改到通过。
+3. 本地校验：需要 Python 3.8 或更新版本（装了 Cellium Agent 就有，不需要额外依赖），在仓库根目录运行 `python scripts/build.py --check`（Linux/macOS 一般用 `python3`）。按提示改到通过。
 4. 提 PR：只提交 `components/<slug>/meta.json` 这一个文件，按 PR 模板填写信息。
 5. 合并后，CI 会先校验；线上服务器每 5 分钟自动拉取并重新构建，最迟 5 分钟后组件出现在 https://components.cellium.top。
 
@@ -25,7 +25,8 @@ cp examples/example-cell.json components/my-cell/meta.json
 # Copy-Item examples/example-cell.json components/my-cell/meta.json
 
 # 然后编辑 components/my-cell/meta.json，把内容改成你的组件
-npm run validate
+python scripts/build.py --check
+# Linux/macOS 用：python3 scripts/build.py --check
 
 git add components/my-cell/meta.json
 git commit -m "add component: my-cell"
@@ -152,15 +153,17 @@ components/<slug>/
 
 ## 本地校验与构建
 
-作者只需要跑校验；构建是 CI 和维护者的事。
+作者只需要跑校验；构建是 CI 和维护者的事。脚本只用 Python 标准库，不需要 `pip install`。
 
 | 命令 | 谁用 | 做什么 |
 | --- | --- | --- |
-| `npm run validate` | 作者自查 | 按构建规则检查所有 `meta.json`，并访问一次直链确认能打开 |
-| `npm run validate:offline` | 作者、断网时 | 同上，但不访问网络，直链只检查格式 |
-| `npm run build` | CI、维护者 | 生成站点数据；不要在 PR 里提交 `dist/` |
+| `python scripts/build.py --check` | 作者自查 | 按构建规则检查所有 `meta.json`，并访问一次直链确认能打开 |
+| `python scripts/build.py --check --skip-remote` | 作者、断网时 | 同上，但跳过直链探活；Git 拉取方式的组件仍需要联网拉仓库 |
+| `python scripts/build.py` | CI、维护者 | 生成站点数据；不要在 PR 里提交 `dist/` |
 
-`npm run build` 的产物：
+Linux/macOS 上一般用 `python3` 代替 `python`。校验 Git 拉取方式的组件需要本机装好 `git`。
+
+`python scripts/build.py` 的产物：
 
 - `dist/data/index.json` — 列表页数据
 - `dist/data/c/<slug>.json` — 详情页数据
@@ -176,9 +179,11 @@ components/<slug>/
   - `https://xiaojinao.github.io/cellium-components/pkg/<slug>-<version>.zip`（仅 Git 拉取方式）
   - Pages 走 CDN，更新后可能有几分钟延迟；线上站点 `components.cellium.top` 始终是最新
 - **线上自动发布**：服务器 crontab 每 5 分钟跑一次 [scripts/deploy.sh](scripts/deploy.sh)，流程是 `git pull` 注册表 → `git pull` 前端仓库 → 构建索引 → 把 JSON 直接写进前端 `dist/`，nginx 直读 `dist`。前端默认在仓库同级目录 `cellium-components-web`，可用环境变量 `CELLIUM_SITE_DIR` 覆盖。
+  - 服务器只需要 **bash + Python 3**（脚本用 `python3`，没有就用 `python`）；不再需要 `zip` / `tar` 命令，Git 拉取模式的打包用 Python 自带的 `zipfile` / `tarfile`
+  - Node 只在前端源码更新、需要重新打包前端时才用到，与注册表构建无关
   - 查看：`crontab -l | grep deploy.sh`
-  - 数据是运行时 `fetch` 的静态文件，所以**只更新组件数据时不会重新打包前端**；只有 `dist/` 不存在或前端源码比 `dist/index.html` 新时才跑 `npm run build`
-  - 需要构建但 `node_modules` 不存在时脚本直接失败，并提示先 `npm ci`，避免假装发布成功
+  - 数据是运行时 `fetch` 的静态文件，所以**只更新组件数据时不会重新打包前端**；只有 `dist/` 不存在或前端源码比 `dist/index.html` 新时才跑前端的 `npm run build`
+  - 需要构建前端但 `node_modules` 不存在时脚本直接失败，并提示先 `npm ci`，避免假装发布成功
   - 部署用的是宽容模式：坏掉的组件会被跳过并告警，不会卡住整站发布
 - **站点怎么读到数据**：前端只从同源取两个文件——`/data/index.json`（列表）和 `/data/c/<slug>.json`（详情），这两个文件由 `deploy.sh` 写进前端 `dist/data/`。改了这个接口路径或字段名，`components.cellium.top` 会直接白屏。
 - **GitHub Pages 是镜像**：Pages 上那份是同一套 JSON 的公开副本，带 `Access-Control-Allow-Origin: *`，方便第三方直接抓取；站点前端不用它。Pages 构建是严格的，直链坏了会导致 Pages 部署失败，但线上站点仍会靠 `--tolerant` 继续发布。

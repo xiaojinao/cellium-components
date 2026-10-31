@@ -7,6 +7,7 @@
   "author": "your-name",
   "repo": "https://github.com/you/cellium-example",
   "license": "MIT",
+  "cover": "https://raw.githubusercontent.com/you/cellium-example/main/cover.png",
   "versions": [
     {
       "version": "1.0.0",

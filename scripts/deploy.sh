@@ -38,6 +38,7 @@ if [ "$need_build" = 1 ]; then
 fi
 
 # 数据是运行时 fetch 的静态 JSON，直接写进 dist，不需要再打包前端
-node scripts/build.mjs --tolerant --out "$SITE/dist"
+if command -v python3 >/dev/null 2>&1; then PY=python3; else PY=python; fi
+"$PY" scripts/build.py --tolerant --out "$SITE/dist"
 
 echo "✓ 发布完成 $(date '+%F %T')"

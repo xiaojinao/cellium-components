@@ -17,21 +17,21 @@
 
 ## 自动检查（CI 会跑，不需要你勾选）
 
-合并前 CI 会执行 `node scripts/build.mjs --check`，自动检查下列内容，任一不过就失败：
+合并前 CI 会执行 `python scripts/build.py --check`，自动检查下列内容，任一不过就失败：
 
 - `meta.json` 必填项是否齐全，目录名和 `slug` 是否一致
 - 名称是否超过 60 字、描述是否超过 160 字、标签是否超过 8 个
-- 版本号是否写成 `1.2.3` 这种三段式，日期是否写成 `2026-10-31`，版本是否按旧到新排列
+- 版本号是否写成 `1.2.3` 这种三段式，日期是否写成 `2026-10-31`
 - 每个版本是否都有直链或 Git 拉取信息
 - 封面（`cover`）：填了就必须是不带空格的 `https://` 图片地址
 - 直链：CI 会真的访问一次这个地址，打不开或返回错误就失败
 - Git 拉取：CI 会去你的仓库确认提交编号真实存在、目录也在
 
-想提交前先自查，本地跑同一条命令即可：
+想提交前先自查，本地跑同一条命令即可（需要 Python 3.8+，Windows 用 `python`，Linux/macOS 一般用 `python3`）：
 
 ```bash
-npm run validate          # 联网，会访问一次直链确认能下载
-npm run validate:offline  # 断网时用，跳过网络访问
+python scripts/build.py --check                 # 联网，会访问一次直链确认能下载
+python scripts/build.py --check --skip-remote   # 跳过直链探活（Git 拉取方式仍需联网）
 ```
 
 ## 需要你确认（机器查不了）
