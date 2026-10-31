@@ -24,7 +24,7 @@ fi
 need_build=0
 if [ ! -f "$SITE/dist/index.html" ]; then
   need_build=1
-elif [ -n "$(find "$SITE/src" "$SITE/index.html" "$SITE/package.json" "$SITE/vite.config.js" \
+elif [ -n "$(find "$SITE/src" "$SITE/public" "$SITE/index.html" "$SITE/package.json" "$SITE/vite.config.js" \
   -newer "$SITE/dist/index.html" -print -quit 2>/dev/null)" ]; then
   need_build=1
 fi
