@@ -1,0 +1,25 @@
+{
+	"slug": "vision",
+	"name": "视觉看图",
+	"summary": "把图片喂给 OpenAI 兼容的多模态模型：支持 URL/本地路径、自动 base64、GIF 自动取首帧。",
+	"category": "ai",
+	"tags": [
+		"视觉",
+		"多模态",
+		"图片",
+		"gif",
+		"vlm"
+	],
+	"author": "Mr.Lee",
+	"repo": "https://github.com/Chzxxuanzheng/cellium-vision",
+	"license": "MIT",
+	"versions": [
+		{
+			"version": "1.0.0",
+			"date": "2026-10-31",
+			"changelog": "首个版本：look 看图（URL/本地路径/GIF 首帧）、config 查看生效配置；不硬编码代理与密钥。",
+			"download": "https://github.com/Chzxxuanzheng/cellium-vision/releases/download/v1.0.0/vision-1.0.0.zip",
+			"min_agent": "0.9.0"
+		}
+	]
+}
