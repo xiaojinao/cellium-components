@@ -57,7 +57,8 @@ https://github.com/you/cellium-example/releases/download/v1.0.0/example-cell.zip
 
 ```
 components/<slug>/
-└── meta.json
+├── meta.json
+└── README.md      # 可选，放了就会显示在组件详情页
 ```
 
 ```json
@@ -172,9 +173,11 @@ components/<slug>/
   - `https://xiaojinao.github.io/cellium-components/data/c/<slug>.json`
   - `https://xiaojinao.github.io/cellium-components/pkg/<slug>-<version>.zip`（仅 Git 拉取方式）
   - Pages 走 CDN，更新后可能有几分钟延迟；线上站点 `components.cellium.top` 始终是最新
-- **线上自动发布**：服务器 crontab 每 5 分钟跑一次 [scripts/deploy.sh](scripts/deploy.sh)，流程是 `git pull` → 构建 → 前端打包，nginx 直读前端产物。
+- **线上自动发布**：服务器 crontab 每 5 分钟跑一次 [scripts/deploy.sh](scripts/deploy.sh)，流程是 `git pull` 注册表 → 构建 → `git pull` 前端仓库 → 打包前端，nginx 直读前端产物。前端默认在仓库同级目录 `cellium-components-web`，可用环境变量 `CELLIUM_SITE_DIR` 覆盖。
   - 查看：`crontab -l | grep deploy.sh`
   - 部署用的是宽容模式：坏掉的组件会被跳过并告警，不会卡住整站发布
+  - 前端目录不存在或没装依赖时脚本直接失败，避免只更新 JSON、不重建前端造成站点显示旧数据
+  - 构建写入 `public/` 的临时数据（`data/c/`、`pkg/`）在打包后会清理，不会污染前端仓库
 - **站点怎么读到数据**：前端只从同源取两个文件——`/data/index.json`（列表）和 `/data/c/<slug>.json`（详情），所以 `deploy.sh` 必须把产物写进前端仓库的 `public/` 再打包。改了这个接口路径或字段名，`components.cellium.top` 会直接白屏。
 - **GitHub Pages 是镜像**：Pages 上那份是同一套 JSON 的公开副本，带 `Access-Control-Allow-Origin: *`，方便第三方直接抓取；站点前端不用它。Pages 构建是严格的，直链坏了会导致 Pages 部署失败，但线上站点仍会靠 `--tolerant` 继续发布。
 

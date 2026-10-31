@@ -212,6 +212,12 @@ for (const dir of readdirSync(COMPONENTS).sort()) {
     fail(dir, `版本 ${v.version} 缺少 download 直链或 source`)
   }
 
+  // 直链模式没有源码目录可读，允许 components/<slug>/README.md 作为详情页正文
+  if (!readme) {
+    const localReadme = join(base, 'README.md')
+    if (existsSync(localReadme)) readme = readFileSync(localReadme, 'utf8')
+  }
+
   versions.sort((a, b) => cmp(b.version, a.version))
   if (versions.length > 1) {
     const sorted = [...versions].map((v) => v.version)
