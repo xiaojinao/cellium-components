@@ -1,5 +1,5 @@
 {
-	"slug": "vision",
+	"slug": "cellium-vision",
 	"name": "视觉看图",
 	"summary": "把图片喂给 OpenAI 兼容的多模态模型：支持 URL/本地路径、自动 base64、GIF 自动取首帧。",
 	"category": "ai",
