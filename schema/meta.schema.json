@@ -90,7 +90,8 @@
           },
           "file": {
             "type": "string",
-            "description": "本地模式：源码文件/目录的相对路径；git 模式留空，由构建自动生成"
+            "readOnly": true,
+            "description": "由构建生成：Git 模式打包后的 zip 文件名；直链模式不使用"
           },
           "download": {
             "type": "string",
@@ -118,7 +119,7 @@
     },
     "source": {
       "type": "object",
-      "description": "组件源码所在的 Git 仓库；不填则用索引仓库内的 components/<slug>/ 目录",
+      "description": "组件源码所在的 Git 仓库；索引仓库内不放任何组件源码，未配置 download 直链时必须提供",
       "required": [
         "type",
         "url"

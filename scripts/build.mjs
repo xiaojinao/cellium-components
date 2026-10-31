@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 构建组件索引：组件源码可在本地 components/<slug>/，也可放在作者自己的 Git 仓库（meta.source）
+// 构建组件索引：索引仓库只有 meta.json，源码在作者自己的仓库（Release 直链或 meta.source）
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, statSync, mkdtempSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join, dirname, resolve } from 'node:path'
@@ -139,6 +139,8 @@ for (const dir of readdirSync(COMPONENTS).sort()) {
   if (!statSync(base).isDirectory()) continue
   const metaPath = join(base, 'meta.json')
   if (!existsSync(metaPath)) { fail(dir, '缺少 meta.json'); continue }
+  // 索引仓库只收元信息，组件源码必须留在作者自己的仓库
+  if (existsSync(join(base, 'src'))) { fail(dir, '索引仓库不接受组件源码，请删除 components/<slug>/src'); continue }
 
   let meta
   try { meta = JSON.parse(readFileSync(metaPath, 'utf8')) } catch (e) { fail(dir, `meta.json 解析失败: ${e.message}`); continue }
@@ -207,10 +209,7 @@ for (const dir of readdirSync(COMPONENTS).sort()) {
       continue
     }
 
-    const file = join(base, v.file || '')
-    if (!v.file || !existsSync(file)) { fail(dir, `版本 ${v.version} 的文件不存在: ${v.file}`); continue }
-    const buf = readFileSync(file)
-    versions.push({ ...v, sha256: sha256(buf), size: buf.length, _local: base })
+    fail(dir, `版本 ${v.version} 缺少 download 直链或 source`)
   }
 
   versions.sort((a, b) => cmp(b.version, a.version))
@@ -222,10 +221,6 @@ for (const dir of readdirSync(COMPONENTS).sort()) {
   if (TOLERANT && badSlugs.has(dir)) { warn(`跳过 ${dir}（校验未通过）`); continue }
 
   const latest = versions[0]
-  if (!readme) {
-    const readmePath = join(base, 'README.md')
-    readme = existsSync(readmePath) ? readFileSync(readmePath, 'utf8') : ''
-  }
 
   items.push({
     slug: meta.slug,
@@ -240,7 +235,7 @@ for (const dir of readdirSync(COMPONENTS).sort()) {
     source: meta.source || null,
     latest_version: latest?.version || '',
     updated_at: latest?.date || '',
-    versions: versions.map(({ _srcDir, _local, ...rest }) => rest),
+    versions: versions.map(({ _srcDir, ...rest }) => rest),
     readme,
     _versions: versions,
   })
@@ -271,19 +266,15 @@ for (const item of items) {
     if (v.download) continue   // 直链版本不打本地包
     const outZip = join(OUT, 'pkg', `${item.slug}-${v.version}.zip`)
     try {
-      if (v._srcDir) {
-        zipDir(v._srcDir, outZip)
-        const buf = readFileSync(outZip)
-        v.sha256 = sha256(buf)
-        v.size = buf.length
-      } else {
-        exec('zip', ['-q', '-r', outZip, v.file, '-x', '*.pyc', '-x', '*__pycache__*'], { cwd: v._local })
-      }
+      zipDir(v._srcDir, outZip)
+      const buf = readFileSync(outZip)
+      v.sha256 = sha256(buf)
+      v.size = buf.length
     } catch (e) {
       warn(`打包失败 ${item.slug}@${v.version}: ${e.message}`)
     }
   }
-  item.versions = item._versions.map(({ _srcDir, _local, ...rest }) => rest)
+  item.versions = item._versions.map(({ _srcDir, ...rest }) => rest)
 }
 
 const index = {

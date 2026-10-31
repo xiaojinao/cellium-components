@@ -1,16 +1,15 @@
 # Cellium Components Registry
 
-组件市场的索引仓库。索引里只有 JSON，源码在作者自己的仓库。
+组件市场的索引仓库。索引里只有 JSON 和元信息，**本仓库不放组件源码、也不收组件安装包**，源码和发布物都在作者自己的仓库。
 
 - 站点：https://components.cellium.top
 - 官网：https://agent.cellium.top
 
-## 三种来源
+## 两种来源
 
 | 模式 | 索引仓库里放什么 | 源码在哪 | 构建时做什么 |
 |---|---|---|---|
-| **直链**（推荐给外部作者） | `meta.json` | 作者仓库的 Release 附件 | 只发 HEAD 请求查可达，不下载、不打包 |
-| **本地源码**（官方组件） | `meta.json` + `src/` | 本仓库 | 打 zip |
+| **直链**（推荐） | `meta.json` | 作者仓库的 Release 附件 | 只发 HEAD 请求查可达，不下载、不打包 |
 | **Git 拉取**（可选） | `meta.json` | 作者仓库的某个 commit | clone、按 commit 导出、打 zip |
 
 ## 直链模式：只写一个 JSON
@@ -58,17 +57,9 @@ components/<slug>/
 
 `download` 必须是 `https://`。`file://`、`http://`、内网地址会被拒绝。
 
-## 本地源码模式（官方组件）
+## 不收组件源码
 
-```
-components/<slug>/
-├── meta.json
-├── README.md      # 详情页正文
-└── src/
-    └── <name>.py
-```
-
-版本里写 `file` 指向源码相对路径，构建打出 `pkg/<slug>-<version>.zip` 并回填 `sha256` / `size`。
+索引仓库不再接受 `components/<slug>/src/` 或任何组件代码、安装包。组件源码请放在自己的仓库里，用上面的直链或 Git 拉取模式登记。
 
 ## Git 拉取模式（可选）
 
@@ -106,7 +97,7 @@ components/<slug>/
 | `changelog` | ≤ 500 字 |
 | `download` | 直链模式必填，安装包 https 直链 |
 | `size` | 可选，构建自动回填 |
-| `file` | 本地源码模式必填 |
+| `file` | 构建自动回填（Git 模式），不要手写 |
 | `commit` / `ref` | Git 模式用 |
 | `min_agent` | 最低 Agent 版本 |
 
@@ -116,7 +107,7 @@ Schema 见 `schema/meta.schema.json`。
 
 ```bash
 npm run validate        # 校验，会发 HEAD 请求查直链
-npm run validate:local  # 校验，跳过网络请求（离线用）
+npm run validate:offline  # 校验，跳过网络请求（离线用）
 npm run build           # 输出 dist/data/*.json 与 dist/pkg/*.zip
 ```
 
@@ -124,9 +115,21 @@ npm run build           # 输出 dist/data/*.json 与 dist/pkg/*.zip
 
 - `dist/data/index.json` — 列表页数据
 - `dist/data/c/<slug>.json` — 详情页数据
-- `dist/pkg/<slug>-<version>.zip` — 仅本地源码/Git 模式才有
+- `dist/pkg/<slug>-<version>.zip` — 仅 Git 模式才有
 
 纯直链组件的仓库，构建产物只有 JSON，没有 `pkg/`。
+
+## GitHub Pages 数据托管
+
+在仓库 **Settings → Pages → Source** 选择 **GitHub Actions**（配置一次即可）。之后每次 push 到 `main`，`.github/workflows/pages.yml` 会构建并把整个 `dist/` 发布到 Pages。
+
+公开地址：
+
+- `https://xiaojinao.github.io/cellium-components/data/index.json`
+- `https://xiaojinao.github.io/cellium-components/data/c/<slug>.json`
+- Git 模式的安装包：`https://xiaojinao.github.io/cellium-components/pkg/<slug>-<version>.zip`
+
+Pages 走 CDN，更新后可能有几分钟延迟；线上站点 `components.cellium.top` 始终是最新。
 
 ## 自动发布
 
