@@ -1,20 +1,59 @@
 # Cellium Components Registry
 
-组件市场的索引仓库。索引里只有 JSON 和元信息，**本仓库不放组件源码、也不收组件安装包**，源码和发布物都在作者自己的仓库。
+组件市场的清单仓库。这里只放"组件说明"（一堆 JSON），**不放组件代码，也不收安装包**。组件代码和 zip 都放在你自己的仓库里，这里只登记它们在哪。
 
 - 站点：https://components.cellium.top
 - 官网：https://agent.cellium.top
 
-## 两种来源
+## 三分钟走通一次提交
 
-| 模式 | 索引仓库里放什么 | 源码在哪 | 构建时做什么 |
+1. 把组件打成 zip，作为一个版本上传到你仓库的 GitHub Releases（或任何能直接下载的地方）。
+2. Fork 这个仓库，在 `components/` 下新建一个以组件标识命名的文件夹，里面放一个 `meta.json`。可以直接复制 [examples/example-cell.json](examples/example-cell.json) 改内容。
+3. 本地校验：装 Node 18 或更新版本，在仓库根目录运行 `npm run validate`（不需要 `npm install`，脚本只用 Node 自带模块）。按提示改到通过。
+4. 提 PR：只提交 `components/<slug>/meta.json` 这一个文件，按 PR 模板填写信息。
+5. 合并后，CI 会先校验；线上服务器每 5 分钟自动拉取并重新构建，最迟 5 分钟后组件出现在 https://components.cellium.top。
+
+对应的 git 命令：
+
+```bash
+git clone https://github.com/<你的用户名>/cellium-components.git
+cd cellium-components
+mkdir -p components/my-cell
+cp examples/example-cell.json components/my-cell/meta.json
+# Windows PowerShell 用：
+# New-Item -ItemType Directory components/my-cell
+# Copy-Item examples/example-cell.json components/my-cell/meta.json
+
+# 然后编辑 components/my-cell/meta.json，把内容改成你的组件
+npm run validate
+
+git add components/my-cell/meta.json
+git commit -m "add component: my-cell"
+git push
+```
+
+推完在 GitHub 页面上点 “Compare & pull request” 发起 PR。
+
+## 两种登记方式
+
+| 方式 | 你要提供什么 | 源码在哪 | 构建时做什么 |
 |---|---|---|---|
-| **直链**（推荐） | `meta.json` | 作者仓库的 Release 附件 | 只发 HEAD 请求查可达，不下载、不打包 |
-| **Git 拉取**（可选） | `meta.json` | 作者仓库的某个 commit | clone、按 commit 导出、打 zip |
+| **直链**（推荐） | 一个 zip 的下载地址 | 你自己的仓库 Release 附件 | 只访问一次地址确认能打开，不下载、不打包 |
+| **Git 拉取**（可选） | 仓库地址 + 提交编号 | 你自己仓库的某次提交 | 拉取仓库、按提交导出、打成 zip |
 
-## 直链模式：只写一个 JSON
+## “直链”是什么
 
-这条路径下，索引仓库里**没有任何代码**，只有元信息。
+“直链”是行话，指**用浏览器打开就会直接开始下载文件（zip）的 https 地址**，通常就是 GitHub Releases 里附件的地址，形如：
+
+```
+https://github.com/you/cellium-example/releases/download/v1.0.0/example-cell.zip
+```
+
+它不是仓库首页，也不是网页地址。在 GitHub 上的拿法：打开你的仓库，点右侧 **Releases** → 进入某个版本 → 在附件上右键 → 复制链接地址。
+
+## 方式一：直链（推荐）
+
+这个方式下，本仓库里**没有任何代码**，只有元信息：
 
 ```
 components/<slug>/
@@ -44,24 +83,23 @@ components/<slug>/
 
 作者流程：
 
-1. 写插件，仓库结构 `src/<name>.py` 或根目录直接放 `.py`
-2. 打包成 zip，发到自己的 Release
-3. 把 zip 直链和描述提 PR 到本仓库
-4. 发版就重复 2–3
+1. 写组件，仓库结构 `src/<name>.py`，或根目录直接放 `.py`
+2. 打包成 zip，发到你自己的 Release
+3. 把 zip 下载地址和描述提 PR 到本仓库
+4. 以后每发一版，重复第 2、3 步，在 `versions` 里加一条
 
-构建时只会对 `download` 发一个 HTTP HEAD：
+构建时会做什么：
 
-- 非 2xx → 构建失败，明确报出是哪个组件哪个版本
-- `content-length` 会被回填到索引的 `size` 字段
-- **不下载文件，不算 hash**，所以直链内容变了构建不会知道
+- 只访问一次这个地址、确认能打开（HTTP HEAD），**不下载文件，也不计算文件指纹**
+- 打不开或返回错误（例如 404）→ CI 失败，并指出是哪个组件、哪个版本
+- 能打开时，把文件大小（响应头 `content-length`）填进索引的 `size` 字段
+- 因为不下载，**同一个版本号的内容被替换不会被发现**，所以别覆盖已经发布过的版本
 
 `download` 必须是 `https://`。`file://`、`http://`、内网地址会被拒绝。
 
-## 不收组件源码
+## 方式二：Git 拉取（可选）
 
-索引仓库不再接受 `components/<slug>/src/` 或任何组件代码、安装包。组件源码请放在自己的仓库里，用上面的直链或 Git 拉取模式登记。
-
-## Git 拉取模式（可选）
+你不自己打 zip，只告诉我们要从哪拉：
 
 ```json
 {
@@ -70,80 +108,79 @@ components/<slug>/
 }
 ```
 
-`commit` 优先，其次是 `ref`（tag/分支）。镜像缓存在 `.cache/git/`，增量 fetch。只接受 `https://`。
+- `subdir` 是组件在仓库里的目录，留空表示仓库根目录
+- 每个版本填 `commit`（一次提交的 40 位编号，不会变）最稳；也可以填 `ref`（tag 或分支名），但 tag 和分支会移动，同一个版本号可能指向不同代码
+- 只接受 `https://` 的仓库地址
+- 构建机器会缓存仓库到 `.cache/git/`，之后只增量拉取
 
-## meta.json 字段
+构建时会 clone 你的公开仓库，按 `commit` 导出 `subdir` 目录、打 zip，并记录 zip 的 `sha256` 和 `size`。如果该目录里有 `README.md`，会显示在组件详情页。
+
+和直链相比：构建机每次都要拉仓库，慢一些；好处是你不用自己打包、也不会出现同版本号换包。
+
+## `meta.json` 字段
 
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
-| `slug` | ✅ | 小写字母/数字/`-`/`_`，2–40 位，与目录名一致 |
-| `name` | ✅ | 展示名，≤ 60 字 |
-| `summary` | ✅ | 列表页摘要，≤ 160 字 |
-| `category` | ✅ | `web` `ai` `security` `interaction` `automation` `data` `media` `other` |
+| `slug` | 是 | 组件唯一标识，同时也是目录名。只能用小写字母、数字、`-`、`_`，2–40 字符 |
+| `name` | 是 | 展示名，最多 60 字 |
+| `summary` | 是 | 列表页的一句话介绍，最多 160 字 |
+| `category` | 是 | 只能从这 8 个里选：`web` `ai` `security` `interaction` `automation` `data` `media` `other` |
 | `tags` | | 最多 8 个 |
-| `author` | ✅ | 作者名 |
-| `repo` | | 源码仓库 |
-| `license` | | 许可证标识 |
-| `deprecated` | | 标记弃用 |
-| `source` | | Git 模式必填 |
-| `versions[]` | ✅ | 至少一项，版本递增，最新版在前 |
+| `author` | 是 | 作者名 |
+| `repo` | | 源码仓库地址 |
+| `license` | | 许可证，如 `MIT` |
+| `deprecated` | | 填 `true` 表示已弃用 |
+| `source` | | Git 拉取方式必填，直链方式不用 |
+| `versions` | 是 | 至少一条，**最新版写在最前面** |
 
-`versions[]`：
+`versions` 里每一项：
 
 | 字段 | 说明 |
 | --- | --- |
-| `version` | ✅ 语义化版本 `x.y.z` |
-| `date` | ✅ `YYYY-MM-DD` |
-| `changelog` | ≤ 500 字 |
-| `download` | 直链模式必填，安装包 https 直链 |
-| `size` | 可选，构建自动回填 |
-| `file` | 构建自动回填（Git 模式），不要手写 |
-| `commit` / `ref` | Git 模式用 |
-| `min_agent` | 最低 Agent 版本 |
+| `version` | 必填，三段式数字，如 `1.2.3`（不接受 `v1.2.3`、`1.2`、`1.2.3-beta`） |
+| `date` | 必填，格式 `2026-10-31` |
+| `changelog` | 这一版改了什么，最多 500 字 |
+| `download` | 直链方式必填，安装包 https 地址 |
+| `commit` / `ref` | Git 拉取方式用；`commit` 是一次提交的编号，`ref` 是 tag 或分支名 |
+| `min_agent` | 需要的最低 Agent 版本 |
+| `size` / `file` / `sha256` | 构建时自动回填，**不要手写** |
 
-Schema 见 `schema/meta.schema.json`。
+字段的机器可读定义在 [schema/meta.schema.json](schema/meta.schema.json)。
 
-## 构建
+## 本地校验与构建
 
-```bash
-npm run validate        # 校验，会发 HEAD 请求查直链
-npm run validate:offline  # 校验，跳过网络请求（离线用）
-npm run build           # 输出 dist/data/*.json 与 dist/pkg/*.zip
-```
+作者只需要跑校验；构建是 CI 和维护者的事。
 
-产物：
+| 命令 | 谁用 | 做什么 |
+| --- | --- | --- |
+| `npm run validate` | 作者自查 | 按构建规则检查所有 `meta.json`，并访问一次直链确认能打开 |
+| `npm run validate:offline` | 作者、断网时 | 同上，但不访问网络，直链只检查格式 |
+| `npm run build` | CI、维护者 | 生成站点数据；不要在 PR 里提交 `dist/` |
+
+`npm run build` 的产物：
 
 - `dist/data/index.json` — 列表页数据
 - `dist/data/c/<slug>.json` — 详情页数据
-- `dist/pkg/<slug>-<version>.zip` — 仅 Git 模式才有
+- `dist/pkg/<slug>-<version>.zip` — 只有 Git 拉取方式才有
 
-纯直链组件的仓库，构建产物只有 JSON，没有 `pkg/`。
+纯直链的仓库，产物只有 JSON，没有 `pkg/`。
 
-## GitHub Pages 数据托管
+## 维护者须知（提交组件的作者可以跳过）
 
-在仓库 **Settings → Pages → Source** 选择 **GitHub Actions**（配置一次即可）。之后每次 push 到 `main`，`.github/workflows/pages.yml` 会构建并把整个 `dist/` 发布到 Pages。
-
-公开地址：
-
-- `https://xiaojinao.github.io/cellium-components/data/index.json`
-- `https://xiaojinao.github.io/cellium-components/data/c/<slug>.json`
-- Git 模式的安装包：`https://xiaojinao.github.io/cellium-components/pkg/<slug>-<version>.zip`
-
-Pages 走 CDN，更新后可能有几分钟延迟；线上站点 `components.cellium.top` 始终是最新。
-
-## 自动发布
-
-线上服务器 crontab 每 5 分钟执行 `scripts/deploy.sh`：`git pull` → 构建 → 前端打包。nginx 直读 `frontend/dist`。
-
-```bash
-crontab -l | grep deploy.sh
-```
-
-直链是死的那一刻，下一次部署就会失败。想避免全站卡住，把 `deploy.sh` 里的构建失败改成告警而非中止。
+- **GitHub Pages**：在仓库 **Settings → Pages → Source** 选 **GitHub Actions**（配置一次）。之后每次 push 到 `main`，[.github/workflows/pages.yml](.github/workflows/pages.yml) 会构建并把整个 `dist/` 发布到 Pages：
+  - `https://xiaojinao.github.io/cellium-components/data/index.json`
+  - `https://xiaojinao.github.io/cellium-components/data/c/<slug>.json`
+  - `https://xiaojinao.github.io/cellium-components/pkg/<slug>-<version>.zip`（仅 Git 拉取方式）
+  - Pages 走 CDN，更新后可能有几分钟延迟；线上站点 `components.cellium.top` 始终是最新
+- **线上自动发布**：服务器 crontab 每 5 分钟跑一次 [scripts/deploy.sh](scripts/deploy.sh)，流程是 `git pull` → 构建 → 前端打包，nginx 直读前端产物。
+  - 查看：`crontab -l | grep deploy.sh`
+  - 部署用的是宽容模式：坏掉的组件会被跳过并告警，不会卡住整站发布
+- **站点怎么读到数据**：前端只从同源取两个文件——`/data/index.json`（列表）和 `/data/c/<slug>.json`（详情），所以 `deploy.sh` 必须把产物写进前端仓库的 `public/` 再打包。改了这个接口路径或字段名，`components.cellium.top` 会直接白屏。
+- **GitHub Pages 是镜像**：Pages 上那份是同一套 JSON 的公开副本，带 `Access-Control-Allow-Origin: *`，方便第三方直接抓取；站点前端不用它。Pages 构建是严格的，直链坏了会导致 Pages 部署失败，但线上站点仍会靠 `--tolerant` 继续发布。
 
 ## 安全说明
 
-进索引不等于审核过代码。直链模式的安装包内容由作者自己控制，同版本号可能被替换。安装前看一眼源码。
+进索引不等于审核过代码。直链方式的安装包内容由作者自己控制，同一个版本号可能被替换。安装前看一眼源码。
 
 ## 组件开发约定
 
