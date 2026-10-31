@@ -71,6 +71,7 @@ components/<slug>/
   "author": "your-name",
   "repo": "https://github.com/you/cellium-my-cell",
   "license": "MIT",
+  "cover": "https://raw.githubusercontent.com/you/cellium-my-cell/main/cover.png",
   "versions": [
     {
       "version": "1.0.0",
@@ -130,6 +131,7 @@ components/<slug>/
 | `author` | 是 | 作者名 |
 | `repo` | | 源码仓库地址 |
 | `license` | | 许可证，如 `MIT` |
+| `cover` | | 封面图 https 地址，列表页和详情页展示；建议 16:9、≤300KB。不填则显示名称首字头像 |
 | `deprecated` | | 填 `true` 表示已弃用 |
 | `source` | | Git 拉取方式必填，直链方式不用 |
 | `versions` | 是 | 至少一条，**最新版写在最前面** |

@@ -156,6 +156,13 @@ for (const dir of readdirSync(COMPONENTS).sort()) {
   if (meta.summary && meta.summary.length > 160) fail(dir, 'summary 超过 160 字')
   if (!Array.isArray(meta.tags)) meta.tags = []
   if (meta.tags.length > 8) fail(dir, 'tags 最多 8 个')
+  if (meta.cover !== undefined && meta.cover !== '') {
+    if (typeof meta.cover !== 'string' || !/^https:\/\/[^\s]+$/i.test(meta.cover)) {
+      fail(dir, 'cover 必须是不带空格的 https:// 图片地址')
+    } else if (meta.cover.length > 800) {
+      fail(dir, 'cover 地址超过 800 字符')
+    }
+  }
 
   if (!Array.isArray(meta.versions) || meta.versions.length === 0) { fail(dir, 'versions 至少一个'); continue }
 
@@ -238,6 +245,7 @@ for (const dir of readdirSync(COMPONENTS).sort()) {
     repo: meta.repo || (meta.source && meta.source.url) || '',
     license: meta.license || '',
     deprecated: !!meta.deprecated,
+    cover: meta.cover || '',
     source: meta.source || null,
     latest_version: latest?.version || '',
     updated_at: latest?.date || '',
@@ -304,6 +312,7 @@ for (const item of items) {
     repo: item.repo,
     license: item.license,
     deprecated: item.deprecated,
+    cover: item.cover,
     source: item.source,
     latest_version: item.latest_version,
     updated_at: item.updated_at,
