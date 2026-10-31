@@ -173,12 +173,12 @@ components/<slug>/
   - `https://xiaojinao.github.io/cellium-components/data/c/<slug>.json`
   - `https://xiaojinao.github.io/cellium-components/pkg/<slug>-<version>.zip`（仅 Git 拉取方式）
   - Pages 走 CDN，更新后可能有几分钟延迟；线上站点 `components.cellium.top` 始终是最新
-- **线上自动发布**：服务器 crontab 每 5 分钟跑一次 [scripts/deploy.sh](scripts/deploy.sh)，流程是 `git pull` 注册表 → 构建 → `git pull` 前端仓库 → 打包前端，nginx 直读前端产物。前端默认在仓库同级目录 `cellium-components-web`，可用环境变量 `CELLIUM_SITE_DIR` 覆盖。
+- **线上自动发布**：服务器 crontab 每 5 分钟跑一次 [scripts/deploy.sh](scripts/deploy.sh)，流程是 `git pull` 注册表 → `git pull` 前端仓库 → 构建索引 → 把 JSON 直接写进前端 `dist/`，nginx 直读 `dist`。前端默认在仓库同级目录 `cellium-components-web`，可用环境变量 `CELLIUM_SITE_DIR` 覆盖。
   - 查看：`crontab -l | grep deploy.sh`
+  - 数据是运行时 `fetch` 的静态文件，所以**只更新组件数据时不会重新打包前端**；只有 `dist/` 不存在或前端源码比 `dist/index.html` 新时才跑 `npm run build`
+  - 需要构建但 `node_modules` 不存在时脚本直接失败，并提示先 `npm ci`，避免假装发布成功
   - 部署用的是宽容模式：坏掉的组件会被跳过并告警，不会卡住整站发布
-  - 前端目录不存在或没装依赖时脚本直接失败，避免只更新 JSON、不重建前端造成站点显示旧数据
-  - 构建写入 `public/` 的临时数据（`data/c/`、`pkg/`）在打包后会清理，不会污染前端仓库
-- **站点怎么读到数据**：前端只从同源取两个文件——`/data/index.json`（列表）和 `/data/c/<slug>.json`（详情），所以 `deploy.sh` 必须把产物写进前端仓库的 `public/` 再打包。改了这个接口路径或字段名，`components.cellium.top` 会直接白屏。
+- **站点怎么读到数据**：前端只从同源取两个文件——`/data/index.json`（列表）和 `/data/c/<slug>.json`（详情），这两个文件由 `deploy.sh` 写进前端 `dist/data/`。改了这个接口路径或字段名，`components.cellium.top` 会直接白屏。
 - **GitHub Pages 是镜像**：Pages 上那份是同一套 JSON 的公开副本，带 `Access-Control-Allow-Origin: *`，方便第三方直接抓取；站点前端不用它。Pages 构建是严格的，直链坏了会导致 Pages 部署失败，但线上站点仍会靠 `--tolerant` 继续发布。
 
 ## 安全说明
