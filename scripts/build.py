@@ -383,6 +383,10 @@ def build(out_dir, check_only, skip_remote, tolerant):
             return 1
         print(f'\n! 已跳过 {len(rep.bad_slugs)} 个组件（{len(rep.errors)} 项问题）:\n{lines}\n', file=sys.stderr)
 
+    if tolerant and rep.bad_slugs and not items:
+        print('\n✗ 所有组件都未通过校验，拒绝发布空索引\n', file=sys.stderr)
+        return 1
+
     total_versions = sum(len(i['versions']) for i in items)
     print(f'✓ 校验通过：{len(items)} 个组件，{total_versions} 个版本')
     if check_only:

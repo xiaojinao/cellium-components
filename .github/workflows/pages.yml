@@ -26,7 +26,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: 构建索引
-        run: python scripts/build.py
+        run: python scripts/build.py --tolerant
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

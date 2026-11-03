@@ -212,15 +212,16 @@ Linux/macOS 上一般用 `python3` 代替 `python`。校验 Git 拉取方式的�
   - `https://xiaojinao.github.io/cellium-components/data/c/<slug>.json`
   - `https://xiaojinao.github.io/cellium-components/pkg/<slug>-<version>.zip`（仅 Git 拉取方式）
   - Pages 走 CDN，更新后可能有几分钟延迟；线上站点 `components.cellium.top` 始终是最新
-- **线上自动发布**：服务器 crontab 每 5 分钟跑一次 [scripts/deploy.sh](scripts/deploy.sh)，流程是 `git pull` 注册表 → `git pull` 前端仓库 → 构建索引 → 把 JSON 直接写进前端 `dist/`，nginx 直读 `dist`。前端默认在仓库同级目录 `cellium-components-web`，可用环境变量 `CELLIUM_SITE_DIR` 覆盖。
-  - 服务器只需要 **bash + Python 3**（脚本用 `python3`，没有就用 `python`）；不再需要 `zip` / `tar` 命令，Git 拉取模式的打包用 Python 自带的 `zipfile` / `tarfile`
-  - Node 只在前端源码更新、需要重新打包前端时才用到，与注册表构建无关
+- **线上自动发布**：脚本在前端仓库 [`cellium-components-web`](https://github.com/xiaojinao/cellium-components-web)，不在本仓库。`scripts/deploy.sh` 由 crontab 每 5 分钟调用：`git pull` 前端 → 按需 `npm run build` → `node scripts/sync-data.mjs` 从 GitHub Pages 拉索引与详情 → 原子替换前端 `dist/data`、`dist/pkg`，nginx 直读 `dist`。镜像地址用 `CELLIUM_MIRROR` 覆盖。
+  - 本仓库只负责生产数据（`build.py`），不参与线上发布
+  - 服务器需要 **bash + Node 20+**；同步只走 Pages 域名，不直接探测组件直链
   - 查看：`crontab -l | grep deploy.sh`
-  - 数据是运行时 `fetch` 的静态文件，所以**只更新组件数据时不会重新打包前端**；只有 `dist/` 不存在或前端源码比 `dist/index.html` 新时才跑前端的 `npm run build`
-  - 需要构建前端但 `node_modules` 不存在时脚本直接失败，并提示先 `npm ci`，避免假装发布成功
-  - 部署用的是宽容模式：坏掉的组件会被跳过并告警，不会卡住整站发布
-- **站点怎么读到数据**：前端只从同源取两个文件——`/data/index.json`（列表）和 `/data/c/<slug>.json`（详情），这两个文件由 `deploy.sh` 写进前端 `dist/data/`。改了这个接口路径或字段名，`components.cellium.top` 会直接白屏。
-- **GitHub Pages 是镜像**：Pages 上那份是同一套 JSON 的公开副本，带 `Access-Control-Allow-Origin: *`，方便第三方直接抓取；站点前端不用它。Pages 构建是严格的，直链坏了会导致 Pages 部署失败，但线上站点仍会靠 `--tolerant` 继续发布。
+  - 只更新组件数据时不会重新打包前端；只有 `dist/` 不存在或前端源码比 `dist/index.html` 新时才跑 `npm run build`
+  - 需要构建前端但 `node_modules` 不存在时脚本直接失败，并提示先 `npm ci`
+  - 拉取失败时保留旧数据，站点不会白屏，只是数据停在上一版
+- **站点怎么读到数据**：前端只从同源取两个文件——`/data/index.json`（列表）和 `/data/c/<slug>.json`（详情），由 `sync-data.mjs` 写进前端 `dist/data/`。改了这个接口路径或字段名，`components.cellium.top` 会直接白屏。
+- **GitHub Pages 已是线上站点的上游**：服务器从 Pages 拉数据，所以 Pages 构建失败时，线上站点会停在上一版（不白屏，但也不更新）。Pages 上那份带 `Access-Control-Allow-Origin: *`，第三方可直接抓取。
+- **严格校验 vs 宽容发布**：PR 校验走严格模式（[.github/workflows/validate.yml](.github/workflows/validate.yml)），坏数据进不了 `main`；发布构建走宽容模式（[.github/workflows/pages.yml](.github/workflows/pages.yml) 用 `--tolerant`），单个组件坏了只跳过它并告警，不卡住整站发布。若所有组件都没通过校验，构建会拒绝发布空索引。
 
 ## 安全说明
 
