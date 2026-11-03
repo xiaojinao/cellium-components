@@ -1,7 +1,7 @@
 {
   "slug": "tieba",
   "name": "百度贴吧",
-  "summary": "逛百度贴吧：看吧看帖看楼层、搜吧搜帖、查用户，登录后可读关注与消息；支持后台定时挑帖推  \n 送到指定会话",
+  "summary": "逛百度贴吧：看吧看帖看楼层、搜吧搜帖、查用户，登录后可读关注与消息；支持后台定时挑帖推送到指定会话",
   "category": "automation",
   "tags": [
     "贴吧",
@@ -16,11 +16,10 @@
       "version": "1.0.0",
       "date": "2026-11-03",
       "download": "https://github.com/Cellium-Project/cellium-tieba/releases/download/v1.0.0/tieba-cell-1.0.0.zip",
-      "changelog": "首个版本：吧/帖/楼层/搜索/用户信息；登录后可读关注吧、我的主题、回复与                  \n @；后台闲逛可定时挑帖推送到指定会话。                                                   \n                                                                                         \n ### 提交确认                                                                            \n                                                                                         \n - [X] 我确认该组件是公开可访问的，且我拥有提交权限或已获得作者授权                      \n - [X] 我确认没有把组件代码或 zip 提交到本仓库",
+      "changelog": "首个版本：吧/帖/楼层/搜索/用户信息；登录后可读关注吧、我的主题、回复与@；后台闲逛可定时挑帖推送到指定会话。",
       "min_agent": "0.9.0"
     }
   ],
   "repo": "https://github.com/Cellium-Project/cellium-tieba",
-  "license": "MIT",
-  "submitted_by": "xiaojinao"
+  "license": "MIT"
 }

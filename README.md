@@ -160,7 +160,7 @@ components/<slug>/
 | --- | --- | --- |
 | `slug` | 是 | 组件唯一标识，同时也是目录名。只能用小写字母、数字、`-`、`_`，2–40 字符 |
 | `name` | 是 | 展示名，最多 60 字 |
-| `summary` | 是 | 列表页的一句话介绍，最多 160 字 |
+| `summary` | 是 | 列表页的一句话介绍，最多 160 字；不要带换行或连续空格 |
 | `category` | 是 | 只能从这 8 个里选：`web` `ai` `security` `interaction` `automation` `data` `media` `other` |
 | `tags` | | 最多 8 个 |
 | `author` | 是 | 作者名 |
@@ -177,7 +177,7 @@ components/<slug>/
 | --- | --- |
 | `version` | 必填，三段式数字，如 `1.2.3`（不接受 `v1.2.3`、`1.2`、`1.2.3-beta`） |
 | `date` | 必填，格式 `2026-10-31` |
-| `changelog` | 这一版改了什么，最多 500 字 |
+| `changelog` | 这一版改了什么，最多 500 字；不要带换行、连续空格或 PR 模板的勾选项 |
 | `download` | 直链方式必填，安装包 https 地址 |
 | `commit` / `ref` | Git 拉取方式用；`commit` 是一次提交的编号，`ref` 是 tag 或分支名 |
 | `min_agent` | 需要的最低 Agent 版本 |

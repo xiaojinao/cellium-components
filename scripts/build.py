@@ -37,6 +37,20 @@ SEMVER = re.compile(r'^\d+\.\d+\.\d+$')
 DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 SLUG_RE = re.compile(r'^[a-z0-9][a-z0-9_-]{1,39}$')
 HTTPS_RE = re.compile(r'^https://[^\s]+$', re.IGNORECASE)
+MESSY_TEXT_RE = re.compile(r'[\r\n\t]| {3,}')
+CHECKBOX_RE = re.compile(r'- \[[xX ]\]')
+
+
+def text_problem(label, value):
+    """换行/连续空格/PR 模板残留会让字段在页面和 Agent 端显示成脏数据。"""
+    if not isinstance(value, str):
+        return None
+    if '### 提交确认' in value or CHECKBOX_RE.search(value):
+        return f'{label} 混入了 PR 模板的“提交确认”内容，请删除'
+    if MESSY_TEXT_RE.search(value):
+        return f'{label} 含换行或连续空格，请改成一个空格并删掉多余空白'
+    return None
+
 
 GIT_TIMEOUT = 180
 HTTP_TIMEOUT = 20
@@ -220,6 +234,8 @@ def sha256_file(path):
 
 
 def build(out_dir, check_only, skip_remote, tolerant):
+    global rep
+    rep = Reporter()
     slugs = set()
     items = []
     cat_count = {}
@@ -258,6 +274,10 @@ def build(out_dir, check_only, skip_remote, tolerant):
             rep.fail(name, 'name 超过 60 字')
         if isinstance(meta.get('summary'), str) and len(meta['summary']) > 160:
             rep.fail(name, 'summary 超过 160 字')
+        for key in ('name', 'summary'):
+            problem = text_problem(key, meta.get(key))
+            if problem:
+                rep.fail(name, problem)
 
         if not isinstance(meta.get('tags'), list):
             meta['tags'] = []
@@ -304,6 +324,11 @@ def build(out_dir, check_only, skip_remote, tolerant):
             seen.add(version)
             if not isinstance(v.get('date'), str) or not DATE_RE.match(v['date']):
                 rep.fail(name, f'版本 {version} 日期格式应为 YYYY-MM-DD')
+            problem = text_problem(f'版本 {version} 的 changelog', v.get('changelog'))
+            if problem:
+                rep.fail(name, problem)
+            if isinstance(v.get('changelog'), str) and len(v['changelog']) > 500:
+                rep.fail(name, f'版本 {version} 的 changelog 超过 500 字')
 
             # 直链模式：不 clone、不打包，只 HEAD 探活取 size
             if v.get('download'):
