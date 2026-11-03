@@ -1,0 +1,170 @@
+name: 提交组件
+description: 登记一个新组件到 Cellium 组件市场
+title: "[Component] "
+labels: ["submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **提交前请先读 [README](https://github.com/xiaojinao/cellium-components#两种提交方式)。**
+
+        1. 把组件打成 zip，作为 Release 附件上传到你自己的仓库
+        2. 回来填这张表，带 `*` 的是必填项
+        3. 提交后机器人自动校验，通过就生成 `components/<slug>/meta.json` 并发起 Pull Request
+
+        本仓库只登记元信息，**不收组件代码，也不收 zip**。
+
+        > 请勿修改或删除下方字段标题，否则自动解析会失败。
+
+  - type: input
+    id: name
+    attributes:
+      label: 组件名称
+      description: 展示名，最多 60 字
+      placeholder: 视觉看图
+    validations:
+      required: true
+
+  - type: input
+    id: slug
+    attributes:
+      label: 组件标识（slug）
+      description: 全站唯一，同时作为目录名；只能用小写字母、数字、中划线、下划线，2-40 位，例如 my-awesome-cell
+      placeholder: my-awesome-cell
+    validations:
+      required: true
+
+  - type: input
+    id: summary
+    attributes:
+      label: 一句话简介
+      description: 列表页展示，最多 160 字
+      placeholder: 把图片喂给多模态模型，支持 URL 与本地路径
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 分类
+      description: web=网页自动化，ai=模型与视觉，security=安全鉴权，interaction=交互增强，automation=流程编排，data=数据处理，media=音视频图像，other=其它
+      options:
+        - web
+        - ai
+        - security
+        - interaction
+        - automation
+        - data
+        - media
+        - other
+    validations:
+      required: true
+
+  - type: input
+    id: tags
+    attributes:
+      label: 标签（可选，逗号分隔）
+      description: 最多 8 个，每个不超过 20 字
+      placeholder: 视觉, 多模态, 图片
+    validations:
+      required: false
+
+  - type: input
+    id: author
+    attributes:
+      label: 作者名称
+      description: 留空则使用提交 Issue 的 GitHub 账号名
+      placeholder: Mr.Lee
+    validations:
+      required: false
+
+  - type: input
+    id: repo
+    attributes:
+      label: 源码仓库地址
+      description: 公开可访问的 https 地址
+      placeholder: https://github.com/you/cellium-vision
+    validations:
+      required: false
+
+  - type: input
+    id: license
+    attributes:
+      label: 许可证
+      description: 组件开源的许可证名称，例如 MIT、Apache-2.0，不确定可以留空
+      placeholder: MIT
+    validations:
+      required: false
+
+  - type: input
+    id: cover
+    attributes:
+      label: 封面图地址（可选）
+      description: https 图片直链，建议 16:9、不超过 300KB
+      placeholder: https://raw.githubusercontent.com/you/repo/main/cover.png
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本号
+      description: 三段式数字，不要带 v，例如 1.0.0
+      placeholder: 1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: date
+    attributes:
+      label: 版本发布日期（可选）
+      description: 格式 2026-11-03，留空则使用今天
+      placeholder: 2026-11-03
+    validations:
+      required: false
+
+  - type: input
+    id: download
+    attributes:
+      label: 安装包直链
+      description: 用浏览器打开就能下载 zip 的 https 地址，通常是 Release 附件
+      placeholder: https://github.com/you/repo/releases/download/v1.0.0/vision-1.0.0.zip
+    validations:
+      required: true
+
+  - type: input
+    id: min_agent
+    attributes:
+      label: 最低 Agent 版本（可选）
+      description: 低于这个版本的 Cellium Agent 不会提示安装；三段式数字，例如 0.9.0
+      placeholder: 0.9.0
+    validations:
+      required: false
+
+  - type: textarea
+    id: changelog
+    attributes:
+      label: 更新日志（可选）
+      description: 这一版改了什么，最多 500 字
+      placeholder: 首个版本
+    validations:
+      required: false
+
+  - type: textarea
+    id: readme
+    attributes:
+      label: 组件说明 / README（可选）
+      description: 支持 Markdown，会写成 components/<slug>/README.md，并渲染在详情页
+      render: markdown
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 提交确认
+      options:
+        - label: 我确认该组件是公开可访问的，且我拥有提交权限或已获得作者授权
+          required: true
+        - label: 我确认没有把组件代码或 zip 提交到本仓库
+          required: true

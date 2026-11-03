@@ -5,7 +5,38 @@
 - 站点：https://components.cellium.top
 - 官网：https://agent.cellium.top
 
-## 三分钟走通一次提交
+## 两种提交方式
+
+| 方式 | 适合谁 | 你要做什么 |
+|---|---|---|
+| **填 Issue 表单**（推荐） | 不想碰 git、不想手写 JSON | 打开「提交组件」Issue，填完提交，其余全自动 |
+| **手工提 PR** | 想自己控制文件内容，或用 Git 拉取模式 | Fork 仓库改 `meta.json`，按下面流程提 PR |
+
+### 方式一：填 Issue 表单
+
+1. 打开 [新建 Issue → 提交组件](https://github.com/xiaojinao/cellium-components/issues/new?template=submit-component.yml)。
+2. 按表单填写：组件名称、标识（slug）、一句话简介、分类、标签、作者、源码仓库、许可证、封面图、版本号、发布日期、安装包直链、最低 Agent 版本、更新日志、README。
+3. 点提交，机器人会自动处理：
+   - **校验**：必填项是否齐全、长度是否超限、slug 是否已被占用、版本号是否三段式、直链是否可下载（只探活，不下载）。
+   - **通过**：生成 `components/<slug>/meta.json`（填了 README 会一并写 `components/<slug>/README.md`），创建 PR，并在 Issue 里给出链接。
+   - **不通过**：评论列出问题并打上 `invalid` 标签。**直接编辑这个 Issue 再保存**即可自动重跑，不用重新开。
+4. PR 合并后，Pages 会立即重建，线上站点最长 5 分钟更新。
+
+几条规则：
+
+- 一个 Issue 只提交一个组件；标识（slug）全站唯一，收录后不要改。
+- 已收录的组件发新版：标识填原 slug、版本号填新版本。机器人会把新版本插到 `versions` 最前面，历史版本保留。
+- 只改简介 / 分类 / 标签 / 封面 / README：同样开 Issue，版本号填**当前最新版本号**，机器人只更新元信息，不新增版本；完全没变化时不会产生 PR。
+- 同一个版本号换包会被拒绝，必须提升版本号。构建只探活不下载，换包无法被发现，所以直接禁止。
+- 安装包直链必须是 `https://`，通常是 GitHub Release 的附件地址，拿法见下面的 [「直链」是什么](#直链是什么)。
+- 谁可以更新：标识一旦被某个 GitHub 账号提交，就只有那个账号（或该组件源码仓库的 owner）能再次更新，防止别人改你的组件信息或抢占标识。机器人在 `meta.json` 里记 `submitted_by` 作为凭证。
+- 贡献归属：PR 里的 commit 直接以你（Issue 提交者）的 GitHub 身份作为 author，合并进 main 后自动记入你的贡献图；代他人提交时，在表单「作者名称」里填对方的 GitHub 用户名，会额外加一条 `Co-authored-by`，两个人都会被记为贡献者。
+- 机器人只会写 `components/<slug>/` 下的 `meta.json` 和 `README.md`，不碰其它目录。
+- 生成的文件会先用仓库自带的 `scripts/build.py --check` 兜底校验一次，不通过就回滚，不会产生半成品 PR。
+
+表单方式只覆盖「直链」模式。想用 Git 拉取（`source` + `commit`），走下面的手工流程。
+
+### 方式二：手工提 PR
 
 1. 把组件打成 zip，作为一个版本上传到你仓库的 GitHub Releases（或任何能直接下载的地方）。
 2. Fork 这个仓库，在 `components/` 下新建一个以组件标识命名的文件夹，里面放 `meta.json`（组件信息）和 `README.md`（详情页正文，可选但建议写）。`meta.json` 可以直接复制 [examples/example-cell.json](examples/example-cell.json) 改内容。
@@ -99,6 +130,7 @@ components/<slug>/
 - 打不开或返回错误（例如 404）→ CI 失败，并指出是哪个组件、哪个版本
 - 能打开时，把文件大小（响应头 `content-length`）填进索引的 `size` 字段
 - 因为不下载，**同一个版本号的内容被替换不会被发现**，所以别覆盖已经发布过的版本
+- 本地网络不稳（TLS 握手被掐、超时）时加 `--skip-remote`，只校验格式不探活
 
 `download` 必须是 `https://`。`file://`、`http://`、内网地址会被拒绝。
 

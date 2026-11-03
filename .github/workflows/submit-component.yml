@@ -1,0 +1,98 @@
+name: submit-component
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: submit-component-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  handle:
+    if: contains(github.event.issue.body, '### 组件名称')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 准备标签
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create submission --color 0E8A16 --force
+          gh label create invalid --color B60205 --force
+          gh label create accepted --color 1D76DB --force
+
+      - name: 解析并校验
+        id: parse
+        continue-on-error: true
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_AUTHOR_ID: ${{ github.event.issue.user.id }}
+        run: python .github/scripts/issue_to_component.py
+
+      - name: 校验未通过
+        if: steps.parse.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          if [ ! -f .submission/comment.md ]; then
+            {
+              echo '## 自动校验未通过'
+              echo ''
+              echo '处理这条 Issue 时出现了内部错误，没有生成结果。'
+              echo '请编辑本 Issue 后保存，机器人会重新跑一次。'
+            } > .submission/comment.md
+          fi
+          gh issue comment "$ISSUE_NUMBER" --body-file .submission/comment.md
+          gh issue edit "$ISSUE_NUMBER" --add-label invalid --remove-label accepted || true
+
+      - name: 生成 PR
+        if: steps.parse.outcome == 'success' && steps.parse.outputs.noop != 'true'
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ steps.parse.outputs.branch }}
+          delete-branch: true
+          title: ${{ steps.parse.outputs.pr_title }}
+          body-path: .submission/pr-body.md
+          author: ${{ steps.parse.outputs.commit_author }}
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          labels: submission
+          add-paths: components
+          commit-message: |
+            ${{ steps.parse.outputs.pr_title }}
+
+            ${{ steps.parse.outputs.coauthor }}
+
+      - name: 校验通过
+        if: steps.parse.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body-file .submission/comment.md
+          gh issue edit "$ISSUE_NUMBER" --add-label accepted --remove-label invalid || true
+          if [ -n "${{ steps.cpr.outputs.pull-request-url }}" ]; then
+            gh issue comment "$ISSUE_NUMBER" --body "Pull Request: ${{ steps.cpr.outputs.pull-request-url }}"
+          fi
+
+      - name: 保留校验记录
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: submission-${{ github.event.issue.number }}
+          path: .submission
+          if-no-files-found: ignore

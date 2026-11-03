@@ -22,6 +22,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -39,6 +40,8 @@ HTTPS_RE = re.compile(r'^https://[^\s]+$', re.IGNORECASE)
 
 GIT_TIMEOUT = 180
 HTTP_TIMEOUT = 20
+HTTP_RETRIES = 3
+MAX_PKG_BYTES = 50 * 1024 * 1024
 UA = 'cellium-registry/1.0'
 
 
@@ -172,6 +175,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 _opener = urllib.request.build_opener(_NoRedirect)
+_follow_opener = urllib.request.build_opener()
 
 
 def check_download(url, skip_remote):
@@ -301,13 +305,13 @@ def build(out_dir, check_only, skip_remote, tolerant):
             if not isinstance(v.get('date'), str) or not DATE_RE.match(v['date']):
                 rep.fail(name, f'版本 {version} 日期格式应为 YYYY-MM-DD')
 
-            # 直链模式：不 clone、不打包，只 HEAD 探活
+            # 直链模式：不 clone、不打包，只 HEAD 探活取 size
             if v.get('download'):
                 try:
                     url = normalize_download(v['download'])
-                    size = check_download(url, skip_remote)
                     nv = dict(v)
                     nv['download'] = url
+                    size = check_download(url, skip_remote)
                     if size is not None:
                         nv['size'] = size
                     versions.append(nv)
@@ -412,7 +416,16 @@ def build(out_dir, check_only, skip_remote, tolerant):
             for k, c in sorted(cat_count.items(), key=lambda kv: kv[1], reverse=True)
         ],
         'items': sorted(
-            [{k: val for k, val in i.items() if k not in ('readme', '_versions')} for i in items],
+            [
+                dict(
+                    {k: val for k, val in i.items() if k not in ('readme', '_versions', 'versions')},
+                    versions=[
+                        {k: v[k] for k in ('version', 'date', 'download', 'file', 'size', 'sha256', 'min_agent') if k in v}
+                        for v in i['versions']
+                    ],
+                )
+                for i in items
+            ],
             key=lambda i: i['updated_at'],
             reverse=True,
         ),
