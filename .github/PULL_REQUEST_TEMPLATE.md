@@ -36,7 +36,7 @@ python scripts/build.py --check --skip-remote   # 跳过直链探活（Git 拉�
 
 ## 需要你确认（机器查不了）
 
-- [ ] 本 PR 只改 `components/<slug>/meta.json`，没有把组件代码或 zip 放进来
+- [ ] 本 PR 只改 `components/<slug>/meta.json` 和 `components/<slug>/README.md`，没有把组件代码或 zip 放进来
 - [ ] 我看过组件源码，它不会删文件、偷偷上传数据或提权
 - [ ] 组件如果使用 `"admin"` 权限，已实现 `is_policy_admin`
 - [ ] Git 拉取：填的是提交编号，不是分支名或 tag（分支和 tag 会移动）

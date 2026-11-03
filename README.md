@@ -1,6 +1,6 @@
 # Cellium Components Registry
 
-组件市场的清单仓库。这里只放"组件说明"（一堆 JSON），**不放组件代码，也不收安装包**。组件代码和 zip 都放在你自己的仓库里，这里只登记它们在哪。
+组件市场的清单仓库。这里只放"组件说明"（`meta.json` + 可选的 `README.md`），**不放组件代码，也不收安装包**。组件代码和 zip 都放在你自己的仓库里，这里只登记它们在哪。
 
 - 站点：https://components.cellium.top
 - 官网：https://agent.cellium.top
@@ -8,10 +8,10 @@
 ## 三分钟走通一次提交
 
 1. 把组件打成 zip，作为一个版本上传到你仓库的 GitHub Releases（或任何能直接下载的地方）。
-2. Fork 这个仓库，在 `components/` 下新建一个以组件标识命名的文件夹，里面放一个 `meta.json`和README.md介绍组件功能。meta.json可以直接复制 [examples/example-cell.json](examples/example-cell.json) 改内容。
+2. Fork 这个仓库，在 `components/` 下新建一个以组件标识命名的文件夹，里面放 `meta.json`（组件信息）和 `README.md`（详情页正文，可选但建议写）。`meta.json` 可以直接复制 [examples/example-cell.json](examples/example-cell.json) 改内容。
 3. 本地校验：需要 Python 3.8 或更新版本（装了 Cellium Agent 就有，不需要额外依赖），在仓库根目录运行 `python scripts/build.py --check`（Linux/macOS 一般用 `python3`）。按提示改到通过。
-4. 提 PR：提交 `components/<slug>/meta.json` 和 `components/<slug>/README.md` 这两个文件，按 PR 模板填写信息。
-5. 合并后，CI 会先校验；线上服务器每 5 分钟自动拉取并重新构建，最迟 5 分钟后组件出现在 https://components.cellium.top
+4. 提 PR：提交 `components/<slug>/meta.json`（必需）和 `components/<slug>/README.md`（可选，不交则详情页没有正文），按 PR 模板填写信息。
+5. 合并后，CI 会先校验；线上服务器每 5 分钟自动拉取并重新构建，最迟 5 分钟后组件出现在 https://components.cellium.top。
 
 对应的 git 命令：
 
@@ -20,15 +20,17 @@ git clone https://github.com/<你的用户名>/cellium-components.git
 cd cellium-components
 mkdir -p components/my-cell
 cp examples/example-cell.json components/my-cell/meta.json
+touch components/my-cell/README.md
 # Windows PowerShell 用：
 # New-Item -ItemType Directory components/my-cell
 # Copy-Item examples/example-cell.json components/my-cell/meta.json
+# New-Item components/my-cell/README.md
 
-# 然后编辑 components/my-cell/meta.json，把内容改成你的组件
+# 然后编辑 components/my-cell/meta.json（组件信息）和 components/my-cell/README.md（详情页正文）
 python scripts/build.py --check
 # Linux/macOS 用：python3 scripts/build.py --check
 
-git add components/my-cell/meta.json
+git add components/my-cell/meta.json components/my-cell/README.md
 git commit -m "add component: my-cell"
 git push
 ```
@@ -88,7 +90,7 @@ components/<slug>/
 
 1. 写组件，仓库结构 `src/<name>.py`，或根目录直接放 `.py`
 2. 打包成 zip，发到你自己的 Release
-3. 把 zip 下载地址和描述提 PR 到本仓库
+3. 在 `components/<slug>/` 下放 `meta.json`（填 zip 地址）和可选的 `README.md`，提 PR 到本仓库
 4. 以后每发一版，重复第 2、3 步，在 `versions` 里加一条
 
 构建时会做什么：
@@ -116,7 +118,7 @@ components/<slug>/
 - 只接受 `https://` 的仓库地址
 - 构建机器会缓存仓库到 `.cache/git/`，之后只增量拉取
 
-构建时会 clone 你的公开仓库，按 `commit` 导出 `subdir` 目录、打 zip，并记录 zip 的 `sha256` 和 `size`。如果该目录里有 `README.md`，会显示在组件详情页。
+构建时会 clone 你的公开仓库，按 `commit` 导出 `subdir` 目录、打 zip，并记录 zip 的 `sha256` 和 `size`。如果该目录里有 `README.md`，会显示在组件详情页；没有的话用 `components/<slug>/README.md` 兜底。
 
 和直链相比：构建机每次都要拉仓库，慢一些；好处是你不用自己打包、也不会出现同版本号换包。
 
