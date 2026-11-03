@@ -8,10 +8,10 @@
 ## 三分钟走通一次提交
 
 1. 把组件打成 zip，作为一个版本上传到你仓库的 GitHub Releases（或任何能直接下载的地方）。
-2. Fork 这个仓库，在 `components/` 下新建一个以组件标识命名的文件夹，里面放一个 `meta.json`。可以直接复制 [examples/example-cell.json](examples/example-cell.json) 改内容。
+2. Fork 这个仓库，在 `components/` 下新建一个以组件标识命名的文件夹，里面放一个 `meta.json`和README.md介绍组件功能。meta.json可以直接复制 [examples/example-cell.json](examples/example-cell.json) 改内容。
 3. 本地校验：需要 Python 3.8 或更新版本（装了 Cellium Agent 就有，不需要额外依赖），在仓库根目录运行 `python scripts/build.py --check`（Linux/macOS 一般用 `python3`）。按提示改到通过。
-4. 提 PR：只提交 `components/<slug>/meta.json` 这一个文件，按 PR 模板填写信息。
-5. 合并后，CI 会先校验；线上服务器每 5 分钟自动拉取并重新构建，最迟 5 分钟后组件出现在 https://components.cellium.top。
+4. 提 PR：提交 `components/<slug>/meta.json` 和 `components/<slug>/README.md` 这两个文件，按 PR 模板填写信息。
+5. 合并后，CI 会先校验；线上服务器每 5 分钟自动拉取并重新构建，最迟 5 分钟后组件出现在 https://components.cellium.top
 
 对应的 git 命令：
 
