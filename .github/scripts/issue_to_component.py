@@ -51,6 +51,31 @@ def read_text(path):
         return ''
 
 
+def pending_prs(slug, offline):
+    repo = os.environ.get('GITHUB_REPOSITORY', '')
+    token = os.environ.get('GITHUB_TOKEN', '')
+    if offline or not repo or not token or not slug:
+        return []
+    url = 'https://api.github.com/repos/' + repo + '/pulls?state=open&per_page=100'
+    req = urllib.request.Request(url, headers={
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': UA,
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=8) as res:
+            data = json.loads(res.read().decode('utf-8', 'replace'))
+    except (urllib.error.URLError, OSError, ValueError, TimeoutError):
+        return []
+    prefix = 'component/' + slug
+    out = []
+    for pr in data if isinstance(data, list) else []:
+        ref = str((pr.get('head') or {}).get('ref') or '')
+        if ref == prefix or ref.startswith(prefix + '-'):
+            out.append(str(pr.get('number')))
+    return out
+
+
 LABELS = {
     'name': '组件名称',
     'slug': '组件标识（slug）',
@@ -356,6 +381,14 @@ def main():
             elif rst in (0, 401, 403, 429):
                 warnings.append('源码仓库地址暂时无法自动校验')
 
+    if not errors and slug:
+        busy = [n for n in pending_prs(slug, offline) if n != str(issue_number)]
+        if busy:
+            warnings.append(
+                '该标识已有待合并的提交（#' + ' #'.join(busy[:3]) + '），'
+                '对方先合并时本 PR 会冲突，届时需要重新提交一次'
+            )
+
     ok = len(errors) == 0
     noop = bool(noop and ok)
     os.makedirs(OUT, exist_ok=True)
@@ -371,7 +404,8 @@ def main():
 
     action_word = 'update' if existing else 'add'
     pr_title = 'feat(component): ' + action_word + ' ' + (v['name'] or slug) + ' (' + slug + ')'
-    branch = 'component/' + slug
+    issue_tag = str(issue_number).strip()
+    branch = 'component/' + slug + ('-' + issue_tag if issue_tag and issue_tag != '0' else '')
 
     readme_path = os.path.join(target_dir, 'README.md')
     before = snapshot([meta_path, readme_path]) if ok and not noop else {}
