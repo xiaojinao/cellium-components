@@ -15,18 +15,18 @@ Cellium agent组件：把外部 [MCP](https://modelcontextprotocol.io) Server �
 
 项目用 [uv](https://docs.astral.sh/uv/) 管理：
 
-
+```bash
 uv sync              # 同步开发环境（仅 dev 依赖，运行时依赖由 Cellium 提供）
 uv run ruff check .  # 代码检查
-
+```
 
 ### 端到端测试
 
 组件依赖 Cellium 的 `app.core`，因此测试必须用 Cellium 自带的解释器：
 
-
+```bash
 ~/.local/share/uv/tools/cellium-agent/bin/python tests/smoke.py
-
+```
 
 测试会启动 `tests/fake_server.py`（一个手写的最小 MCP Server），验证
 `add_server / list_servers / ping / list_tools / call_tool` 全链路，
@@ -36,16 +36,16 @@ uv run ruff check .  # 代码检查
 
 Cellium 的组件扫描器会跟随符号链接，所以开发目录可以直接链到组件目录：
 
-
+```bash
 ./scripts/install.sh          # 安装/更新软链接
 ./scripts/install.sh --remove # 卸载
-
+```
 
 等价于：
 
-
+```bash
 ln -sfn "$PWD/src/cellium_mcp" ~/.local/share/CelliumAgent/components/cellium_mcp
-
+```
 
 装完在 Cellium 里执行 `component reload`（或重启）即可热加载。
 
@@ -53,9 +53,9 @@ ln -sfn "$PWD/src/cellium_mcp" ~/.local/share/CelliumAgent/components/cellium_mc
 
 发版全走 CI，本地不打包、不传附件，只推 tag：
 
-
+```bash
 git tag v0.1.0 && git push origin v0.1.0   # 触发构建与发布
-
+```
 
 `.github/workflows/release.yml` 会在 tag 推送时校验 `meta.json`、编译全部源码、
 打包成「顶层为 `cellium_mcp/`」的 zip、断言 zip 布局，再把
@@ -76,11 +76,11 @@ git tag v0.1.0 && git push origin v0.1.0   # 触发构建与发布
 `_cmd_` 命令。LLM 在工具定义里直接看到这些工具和参数，按工具名调用即可，不需要
 `list_tools` 预探测。
 
-
+```python
 # 远端工具 Tavily__tavily-search 注入后，直接这样调：
 cellium_mcp(command="Tavily__tavily_search", query="...", max_results=5)
 # 而不是：command="call_tool", server="base-tool", tool="Tavily__tavily-search"
-
+```
 
 注入规则：工具名中非 `[A-Za-z0-9_]` 字符替换为 `_`（如 `Tavily__tavily-search` →
 `Tavily__tavily_search`），参数按 `inputSchema` 平铺成命令参数，必填/可选与类型都保留。
@@ -103,14 +103,14 @@ cellium_mcp(command="Tavily__tavily_search", query="...", max_results=5)
 
 ### 示例
 
-
+```bash
 add_server name=fs cmd=uvx args='["mcp-server-filesystem", "/tmp"]'
 list_tools server=fs
 call_tool server=fs tool=read_file arguments='{"path": "/tmp/a.txt"}'
 
 # HTTP 服务器
 add_server name=remote transport=http url=http://127.0.0.1:8000/mcp headers='{"Authorization":"Bearer xxx"}'
-
+```
 
 配置文件位置：`~/.local/share/CelliumAgent/data/mcp/servers.json`（可用环境变量
 `CELLIUM_DATA_DIR` 覆盖）。**这个文件可以手写**，每次命令都会重新读取，改完立即生效，
@@ -120,15 +120,15 @@ add_server name=remote transport=http url=http://127.0.0.1:8000/mcp headers='{"A
 
 首次使用时文件不存在，创建即可：
 
-
+```bash
 mkdir -p ~/.local/share/CelliumAgent/data/mcp
 cp docs/servers.example.json ~/.local/share/CelliumAgent/data/mcp/servers.json
 $EDITOR ~/.local/share/CelliumAgent/data/mcp/servers.json
-
+```
 
 格式（`docs/servers.example.json` 有完整示例）：
 
-
+```json
 {
   "servers": {
     "filesystem": {
@@ -146,7 +146,7 @@ $EDITOR ~/.local/share/CelliumAgent/data/mcp/servers.json
     }
   }
 }
-
+```
 
 字段说明：
 
@@ -164,13 +164,13 @@ $EDITOR ~/.local/share/CelliumAgent/data/mcp/servers.json
 兼容性：顶层键写 `servers` 或 `mcpServers` 都行，所以 Claude Desktop / Cursor 的
 `mcp.json` 内容可以直接粘过来（`type` 字段也认）；保存时会统一规范成 `servers`。
 
-
 ## 目录结构
 
-
+```
 src/cellium_mcp/
 ├── __init__.py    # 包入口，导出 McpCell
 ├── cell.py        # BaseCell 子类，暴露 _cmd_* 命令
 ├── client.py      # 会话客户端：initialize / tools/list / tools/call
 ├── transport.py   # stdio 与 streamable HTTP 传输层
 └── config.py      # 服务器配置读写
+```
