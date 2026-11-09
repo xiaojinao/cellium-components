@@ -41,6 +41,18 @@ MESSY_TEXT_RE = re.compile(r'[\r\n\t]| {3,}')
 CHECKBOX_RE = re.compile(r'- \[[xX ]\]')
 
 
+def wrapped_in_fence(text):
+    lines = text.strip().split('\n')
+    while lines and not lines[-1].strip():
+        lines.pop()
+    if len(lines) < 2 or not lines[0].lstrip().startswith('```'):
+        return False
+    for i in range(1, len(lines)):
+        if lines[i].strip().startswith('```'):
+            return i == len(lines) - 1
+    return False
+
+
 def text_problem(label, value):
     """换行/连续空格/PR 模板残留会让字段在页面和 Agent 端显示成脏数据。"""
     if not isinstance(value, str):
@@ -373,6 +385,9 @@ def build(out_dir, check_only, skip_remote, tolerant):
             if os.path.isfile(local_readme):
                 with open(local_readme, encoding='utf-8', errors='replace') as f:
                     readme = f.read()
+
+        if readme and wrapped_in_fence(readme):
+            rep.fail(name, 'README.md 整篇被 ``` 代码块包住，详情页会整篇变成代码块；请删掉首尾两行围栏')
 
         versions.sort(key=lambda x: version_key(x['version']), reverse=True)
 
