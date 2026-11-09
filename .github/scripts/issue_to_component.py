@@ -96,39 +96,52 @@ LABELS = {
 }
 
 
+def split_section(body, label, stop_label=None):
+    """切出一段表单内容，并从 body 中移除，避免最后一段把后面的内容一起吞进去。
+
+    stop_label 用于 README 这类多行内容：它的正文里可以有自己的 '### 标题'，
+    所以只能停在下一个已知的段（提交确认）前，不能停在任意 '### ' 前。
+    """
+    mark = '### ' + label
+    idx = body.find(mark)
+    if idx < 0:
+        return '', body
+    start = idx + len(mark)
+    if stop_label:
+        stop_idx = body.find('### ' + stop_label, start)
+        end = stop_idx if stop_idx >= 0 else len(body)
+    else:
+        nxt = body.find(NL + '### ', start)
+        end = nxt + 1 if nxt >= 0 else len(body)
+    return body[start:end].strip(), body[:idx] + body[end:]
+
+
 def parse_form(body):
     values = {}
-    confirm_mark = '### ' + LABELS['confirm']
-    readme_mark = '### ' + LABELS['readme']
-    confirm_idx = body.find(confirm_mark)
-    readme_idx = body.find(readme_mark)
-    rest = body
-    if readme_idx >= 0:
-        end = confirm_idx if confirm_idx > readme_idx else len(body)
-        values['readme'] = body[readme_idx + len(readme_mark):end].strip()
-        rest = body[:readme_idx] + (body[confirm_idx:] if confirm_idx > readme_idx else '')
-    if confirm_idx >= 0:
-        values['confirm'] = body[confirm_idx + len(confirm_mark):].strip()
-    marks = []
+    values['readme'], body = split_section(body, LABELS['readme'], LABELS['confirm'])
+    values['confirm'], body = split_section(body, LABELS['confirm'])
     for key, label in LABELS.items():
         if key in ('readme', 'confirm'):
             continue
-        idx = rest.find('### ' + label)
-        if idx >= 0:
-            marks.append((idx, key, label))
-    marks.sort()
-    for i, (idx, key, label) in enumerate(marks):
-        start = idx + 4 + len(label)
-        end = marks[i + 1][0] if i + 1 < len(marks) else len(rest)
-        values[key] = rest[start:end].strip()
+        values[key], body = split_section(body, label)
     return values
 
 
-def clean(value):
+SINGLE_LINE_KEYS = {
+    'name', 'slug', 'summary', 'category', 'tags', 'author', 'repo', 'license',
+    'cover', 'version', 'vdate', 'download', 'min_agent', 'changelog',
+}
+
+
+def clean(value, single_line=False):
     text = (value or '').strip()
     if text in ('_No response_', '_没有提供答复_'):
         return ''
-    return text.replace(CRLF, NL).replace(chr(13), NL)
+    text = text.replace(CRLF, NL).replace(chr(13), NL)
+    if single_line:
+        # 表单里换行粘贴很常见，单行字段统一压成一行，避免写进 meta.json 后变脏
+        text = ' '.join(text.split())
+    return text
 
 
 def probe(url):
@@ -223,7 +236,7 @@ def main():
     issue_author_id = os.environ.get('ISSUE_AUTHOR_ID', '')
 
     raw = parse_form(body)
-    v = {key: clean(raw.get(key, '')) for key in LABELS}
+    v = {key: clean(raw.get(key, ''), key in SINGLE_LINE_KEYS) for key in LABELS}
 
     errors = []
     warnings = []
