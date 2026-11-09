@@ -1,4 +1,3 @@
-```markdown
 纯AI糊，我什么都不保证
 
 ---
@@ -175,4 +174,3 @@ src/cellium_mcp/
 ├── client.py      # 会话客户端：initialize / tools/list / tools/call
 ├── transport.py   # stdio 与 streamable HTTP 传输层
 └── config.py      # 服务器配置读写
-```

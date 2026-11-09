@@ -32,6 +32,7 @@ SEMVER_RE = re.compile(r'^[0-9]+[.][0-9]+[.][0-9]+$')
 DATE_RE = re.compile(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
 HTTPS_RE = re.compile(r'^https://[^ ]+$')
 LOGIN_RE = re.compile(r'^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$')
+FENCE_RE = re.compile(r'\A```[^\n]*\n(.*)\n```\Z', re.S)
 
 
 def noreply(login, uid=''):
@@ -131,6 +132,16 @@ SINGLE_LINE_KEYS = {
     'name', 'slug', 'summary', 'category', 'tags', 'author', 'repo', 'license',
     'cover', 'version', 'vdate', 'download', 'min_agent', 'changelog',
 }
+
+
+def strip_outer_fence(text):
+    """表单里把整段 README 包进 ```markdown 代码块是很常见的粘贴习惯，写盘前去掉这层围栏。
+
+    不去掉的话，页面会把整篇 README 当成一个代码块渲染，看起来就像"Markdown 解析坏了"。
+    """
+    text = (text or '').strip()
+    m = FENCE_RE.match(text)
+    return m.group(1).strip() if m else text
 
 
 def clean(value, single_line=False):
@@ -237,6 +248,7 @@ def main():
 
     raw = parse_form(body)
     v = {key: clean(raw.get(key, ''), key in SINGLE_LINE_KEYS) for key in LABELS}
+    v['readme'] = strip_outer_fence(v['readme'])
 
     errors = []
     warnings = []
