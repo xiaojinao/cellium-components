@@ -1,8 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 组件市场
-    url: https://components.cellium.top
-    about: 在线浏览已收录的组件
   - name: 提交说明
     url: https://github.com/xiaojinao/cellium-components#两种提交方式
     about: 填表单提交，或手工提 PR 的完整说明

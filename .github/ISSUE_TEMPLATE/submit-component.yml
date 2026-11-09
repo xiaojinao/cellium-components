@@ -119,7 +119,7 @@ body:
     attributes:
       label: 版本发布日期（可选）
       description: 格式 2026-11-03，留空则使用今天
-      placeholder: 2026-11-03
+      placeholder: "2026-11-03"
     validations:
       required: false
 

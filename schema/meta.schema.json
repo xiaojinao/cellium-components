@@ -71,6 +71,10 @@
       "pattern": "^https://",
       "description": "可选：封面图 https 地址，列表页与详情页展示；建议 16:9、≤300KB。不填则显示名称首字头像"
     },
+    "submitted_by": {
+      "type": "string",
+      "description": "由 Issue 机器人写入：提交该组件的 GitHub 账号，用于后续仅允许原提交者或源码仓库 owner 更新"
+    },
     "versions": {
       "type": "array",
       "minItems": 1,

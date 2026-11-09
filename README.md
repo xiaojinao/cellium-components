@@ -14,7 +14,7 @@
 
 ### 方式一：填 Issue 表单
 
-1. 打开 [新建 Issue → 提交组件](https://github.com/xiaojinao/cellium-components/issues/new?template=submit-component.yml)。
+1. 打开 [新建 Issue → 提交组件](https://github.com/xiaojinao/cellium-components/issues/new?template=submit-component.yml)，会直接进入表单。
 2. 按表单填写：组件名称、标识（slug）、一句话简介、分类、标签、作者、源码仓库、许可证、封面图、版本号、发布日期、安装包直链、最低 Agent 版本、更新日志、README。
 3. 点提交，机器人会自动处理：
    - **校验**：必填项是否齐全、长度是否超限、slug 是否已被占用、版本号是否三段式、直链是否可下载（只探活，不下载）。
@@ -169,6 +169,7 @@ components/<slug>/
 | `cover` | | 封面图 https 地址，列表页和详情页展示；建议 16:9、≤300KB。不填则显示名称首字头像 |
 | `deprecated` | | 填 `true` 表示已弃用 |
 | `source` | | Git 拉取方式必填，直链方式不用 |
+| `submitted_by` | | 由 Issue 机器人自动写入，**不要手填**；用于把组件更新权限绑定到原提交者 |
 | `versions` | 是 | 至少一条，**最新版写在最前面** |
 
 `versions` 里每一项：
