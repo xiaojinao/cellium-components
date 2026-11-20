@@ -15,7 +15,7 @@
 ### 方式一：填 Issue 表单
 
 1. 打开 [新建 Issue → 提交组件](https://github.com/xiaojinao/cellium-components/issues/new?template=submit-component.yml)，会直接进入表单。
-2. 按表单填写：组件名称、标识（slug）、一句话简介、分类、标签、作者、源码仓库、许可证、封面图、版本号、发布日期、安装包直链、最低 Agent 版本、更新日志、README。
+2. 按表单填写：组件名称、标识（slug）、一句话简介、分类、标签、源码仓库、许可证、封面图、版本号、发布日期、安装包直链、最低 Agent 版本、更新日志、README。作者不用填，自动取源码仓库的 GitHub owner。
 3. 点提交，机器人会自动处理：
    - **校验**：必填项是否齐全、长度是否超限、slug 是否已被占用、版本号是否三段式、直链是否可下载（只探活，不下载）。
    - **通过**：生成 `components/<slug>/meta.json`（填了 README 会一并写 `components/<slug>/README.md`），创建 PR，并在 Issue 里给出链接。
@@ -30,7 +30,7 @@
 - 同一个版本号换包会被拒绝，必须提升版本号。构建只探活不下载，换包无法被发现，所以直接禁止。
 - 安装包直链必须是 `https://`，通常是 GitHub Release 的附件地址，拿法见下面的 [「直链」是什么](#直链是什么)。
 - 谁可以更新：标识一旦被某个 GitHub 账号提交，就只有那个账号（或该组件源码仓库的 owner）能再次更新，防止别人改你的组件信息或抢占标识。机器人在 `meta.json` 里记 `submitted_by` 作为凭证。
-- 贡献归属：PR 里的 commit 直接以你（Issue 提交者）的 GitHub 身份作为 author，合并进 main 后自动记入你的贡献图；代他人提交时，在表单「作者名称」里填对方的 GitHub 用户名，会额外加一条 `Co-authored-by`，两个人都会被记为贡献者。
+- 贡献归属：作者不用填，机器人自动取源码仓库的 GitHub owner 作为作者（优先展示名，取不到时用登录名；非 GitHub 仓库则用提交者账号）。PR 里的 commit 以你（Issue 提交者）的 GitHub 身份作为 author；代他人提交时自动追加一条 `Co-authored-by: 仓库owner`，两个人都会被记为贡献者。
 - 机器人只会写 `components/<slug>/` 下的 `meta.json` 和 `README.md`，不碰其它目录。
 - 生成的文件会先用仓库自带的 `scripts/build.py --check` 兜底校验一次，不通过就回滚，不会产生半成品 PR。
 
@@ -163,7 +163,7 @@ components/<slug>/
 | `summary` | 是 | 列表页的一句话介绍，最多 160 字；不要带换行或连续空格 |
 | `category` | 是 | 只能从这 8 个里选：`web` `ai` `security` `interaction` `automation` `data` `media` `other` |
 | `tags` | | 最多 8 个 |
-| `author` | 是 | 作者名 |
+| `author` | 是 | 作者名；表单方式自动取源码仓库的 GitHub owner，无需手填 |
 | `repo` | | 源码仓库地址 |
 | `license` | | 许可证，如 `MIT` |
 | `cover` | | 封面图 https 地址，列表页和详情页展示；建议 16:9、≤300KB。不填则显示名称首字头像 |

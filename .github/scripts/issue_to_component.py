@@ -43,6 +43,36 @@ def repo_owner(url):
     return m.group(1).lower() if m else ''
 
 
+def github_owner(url, token='', online=True):
+    """从源码仓库链接自动识别作者：离线解析 owner 登录名，在线再用 API 补全展示名。"""
+    m = re.match(r'^https?://(?:www[.])?github[.]com/([^/#?]+)/([^/#?\s]+)', str(url or ''), re.I)
+    if not m:
+        return None
+    name = m.group(2)
+    name = name[:-4] if name.endswith('.git') else name
+    info = {'login': m.group(1), 'id': '', 'display': m.group(1)}
+    if not online:
+        return info
+    headers = {'User-Agent': UA, 'Accept': 'application/vnd.github+json'}
+    if token:
+        headers['Authorization'] = 'Bearer ' + token
+    try:
+        req = urllib.request.Request('https://api.github.com/repos/' + info['login'] + '/' + name, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as res:
+            owner = (json.loads(res.read().decode('utf-8', 'replace')) or {}).get('owner') or {}
+        if owner.get('login'):
+            info['login'] = str(owner['login'])
+            info['id'] = str(owner.get('id') or '')
+            if str(owner.get('type') or '') == 'User':
+                req = urllib.request.Request('https://api.github.com/users/' + info['login'], headers=headers)
+                with urllib.request.urlopen(req, timeout=10) as res:
+                    uname = str((json.loads(res.read().decode('utf-8', 'replace')) or {}).get('name') or '').strip()
+                info['display'] = uname or info['login']
+    except Exception:
+        pass
+    return info
+
+
 def read_text(path):
     try:
         with open(path, encoding='utf-8', errors='replace') as fh:
@@ -82,7 +112,6 @@ LABELS = {
     'summary': '一句话简介',
     'category': '分类',
     'tags': '标签（可选，逗号分隔）',
-    'author': '作者名称',
     'repo': '源码仓库地址',
     'license': '许可证',
     'cover': '封面图地址（可选）',
@@ -128,7 +157,7 @@ def parse_form(body):
 
 
 SINGLE_LINE_KEYS = {
-    'name', 'slug', 'summary', 'category', 'tags', 'author', 'repo', 'license',
+    'name', 'slug', 'summary', 'category', 'tags', 'repo', 'license',
     'cover', 'version', 'vdate', 'download', 'min_agent', 'changelog',
 }
 
@@ -295,7 +324,7 @@ def main():
     elif not HTTPS_RE.match(v['download']):
         errors.append('安装包直链必须是不带空格的 https 地址')
 
-    for key, label, limit in (('author', '作者名称', 60), ('repo', '源码仓库地址', 300), ('license', '许可证', 40)):
+    for key, label, limit in (('repo', '源码仓库地址', 300), ('license', '许可证', 40)):
         if len(v[key]) > limit:
             errors.append(label + '过长')
 
@@ -308,7 +337,7 @@ def main():
         errors.append('封面图地址超过 800 字符')
 
     if v['min_agent'] and not SEMVER_RE.match(v['min_agent']):
-        errors.append('最低 Agent 版本必须是三段式数字，例如 0.9.0')
+        errors.append('最低 Agent 版本必须是三段式数字，例如 1.4.5')
 
     if len(v['changelog']) > 500:
         errors.append('更新日志不得超过 500 字')
@@ -340,7 +369,8 @@ def main():
         if old_repo and new_repo and old_repo.lower() != new_repo.lower():
             errors.append('组件标识 ' + slug + ' 已被其他仓库占用，请更换标识')
         owner = str(existing.get('submitted_by') or '').lower() or repo_owner(old_repo or new_repo)
-        if owner and issue_author and owner != issue_author.lower():
+        repo_own = repo_owner(old_repo or new_repo)
+        if owner and issue_author and owner != issue_author.lower() and repo_own != issue_author.lower():
             errors.append(
                 '该标识由 @' + owner + ' 提交，只有作者本人或仓库 owner 可以更新；'
                 '如确需代办，请让作者本人提交本 Issue'
@@ -354,7 +384,16 @@ def main():
                 same = item
                 break
 
-    author_display = v['author'] or (existing or {}).get('author') or issue_author or slug
+    token = os.environ.get('GITHUB_TOKEN') or os.environ.get('GH_TOKEN') or ''
+    owner_info = github_owner(v['repo'], token, online=not offline and not errors) if v['repo'] else None
+    owner_login = (owner_info or {}).get('login') or ''
+    author_display = (
+        (owner_info or {}).get('display')
+        or owner_login
+        or (existing or {}).get('author')
+        or issue_author
+        or slug
+    )
     existing_readme = read_text(os.path.join(target_dir, 'README.md'))
 
     def _meta_same(old):
@@ -424,9 +463,9 @@ def main():
     commit_author = ''
     if LOGIN_RE.match(issue_author):
         commit_author = issue_author + ' <' + noreply(issue_author, issue_author_id) + '>'
-    claimed = (v['author'] or '').lstrip('@')
+    claimed = owner_login
     if claimed and LOGIN_RE.match(claimed) and claimed.lower() != str(issue_author).lower():
-        trailers.append('Co-authored-by: ' + claimed + ' <' + noreply(claimed) + '>')
+        trailers.append('Co-authored-by: ' + claimed + ' <' + noreply(claimed, (owner_info or {}).get('id') or '') + '>')
     coauthor = NL.join(trailers)
 
     action_word = 'update' if existing else 'add'
@@ -491,6 +530,7 @@ def main():
         lines.append('')
         lines.append('- 名称：' + v['name'])
         lines.append('- 标识：`' + slug + '`')
+        lines.append('- 作者：' + author_display)
         lines.append('- 分类：' + v['category'])
         lines.append('- 版本：' + v['version'] + '（' + vdate + '）')
         lines.append('- 直链：' + v['download'])

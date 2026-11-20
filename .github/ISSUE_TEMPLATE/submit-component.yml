@@ -70,15 +70,6 @@ body:
       required: false
 
   - type: input
-    id: author
-    attributes:
-      label: 作者名称
-      description: 留空则使用提交 Issue 的 GitHub 账号名
-      placeholder: Mr.Lee
-    validations:
-      required: false
-
-  - type: input
     id: repo
     attributes:
       label: 源码仓库地址
@@ -136,8 +127,8 @@ body:
     id: min_agent
     attributes:
       label: 最低 Agent 版本（可选）
-      description: 低于这个版本的 Cellium Agent 不会提示安装；三段式数字，例如 0.9.0
-      placeholder: 0.9.0
+      description: 低于这个版本的 Cellium Agent 不会提示安装；三段式数字，例如 1.4.5
+      placeholder: 1.4.5
     validations:
       required: false
 

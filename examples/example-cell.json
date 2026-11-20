@@ -13,7 +13,8 @@
       "version": "1.0.0",
       "date": "2026-10-31",
       "changelog": "首个版本",
-      "download": "https://github.com/you/cellium-example/releases/download/v1.0.0/example-cell.zip"
+      "download": "https://github.com/you/cellium-example/releases/download/v1.0.0/example-cell.zip",
+      "min_agent": "1.4.5"
     }
   ]
 }
